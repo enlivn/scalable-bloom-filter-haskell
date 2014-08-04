@@ -1,4 +1,5 @@
 module ImmutableBloomFilter (ImmutableBloom,
+                             new',
                              ImmutableBloomFilter.new,
                              length,
                              elem,
@@ -11,10 +12,13 @@ import Data.Word (Word32)
 import Prelude hiding (length, elem, notElem)
 import MutableBloomFilter as M (new, insert)
 
+new :: (Hashable a) => Double -> [a] -> Either String (ImmutableBloom a)
+new = undefined
+
 -- create an immutable bloom filter.
--- you also need to provide a list of values with which to initialize the bloom filter
-new :: (a -> [Word32]) -> Word32 -> [a] -> ImmutableBloom a
-new hashFns numBits initList = ImmutableBloom hashFns $ runSTUArray createAndInitMutableArray
+-- in addition to the hash functions and the number of bits you also need to provide a list of values with which to initialize the bloom filter
+new' :: (a -> [Word32]) -> Word32 -> [a] -> ImmutableBloom a
+new' hashFns numBits initList = ImmutableBloom hashFns $ runSTUArray createAndInitMutableArray
     where createAndInitMutableArray = do
                                         mutableBloom <- M.new hashFns numBits
                                         mapM_ (M.insert mutableBloom) initList
