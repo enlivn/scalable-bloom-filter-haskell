@@ -19,11 +19,22 @@ import MutableBloomFilter as M (new, insert)
 -- The first argument is the false positive rate desired (between 0 and 1) (P)
 -- The second argument is a list of values with which to initialize the filter
 new :: (Hashable a) => Double -> [a] -> Either String (ImmutableBloom a)
-new falsePositiveRate initList = case (calculateFilterSize falsePositiveRate (genericLength initList)) of
+new falsePositiveRate initList = case (calculateFilterParams falsePositiveRate (genericLength initList)) of
     Left err -> Left err
     Right (bitsPerSlice, numSlices) -> Right $ new' numSlices bitsPerSlice initList
-    where calculateFilterSize :: Double -> Word32 -> Either String (Word32, Int)
-          calculateFilterSize = undefined
+
+-- | Given error rate (P) and capacity (n), returns (bits per slice (m), number of slices (k))
+-- Note that m*k = M (filter size)
+-- We assume in the equations below that the fill ratio (p) is optimal i.e., p = 1/2. 'Optimal' here means
+-- we've maximized the capacity n
+calculateFilterParams :: Double -> Word32 -> Either String (Word32, Int)
+calculateFilterParams p n | n <= 0 = Left "n must be strictly positive"
+                        | p <= 0 || p >= 1 = Left "p must be between 0 and 1"
+                        | otherwise = Right (fromIntegral . truncate $ m, k)
+    where k = ceiling $ logBase 2 (1 / p) :: Int-- k = log2 (1/P)
+          m = n' * abs (log p) / (k' * (log 2)**2) :: Double -- m = n * abs(log(P))/(k*(ln2)^2)
+          n' = fromIntegral n :: Double
+          k' = fromIntegral k :: Double
 
 -- | Create an immutable bloom filter.
 -- The first argument is the number of slices in the filter (k)
@@ -31,12 +42,12 @@ new falsePositiveRate initList = case (calculateFilterSize falsePositiveRate (ge
 -- The third argument is a list of values with which to initialize the filter
 new' :: (Hashable a) => Int -> Word32 -> [a] -> ImmutableBloom a
 new' numSlices bitsPerSlice initList = ImmutableBloom bitsPerSlice freezeHashFnsFromMutableBloom freezeArrayFromMutableBloom
-    where freezeArrayFromMutableBloom = runSTUArray (fmap mutBitArray mutableBloom)
+    where freezeHashFnsFromMutableBloom = runST $ fmap mutHashFns mutableBloom
+          freezeArrayFromMutableBloom = runSTUArray (fmap mutBitArray mutableBloom)
           mutableBloom = do
                            mutableBloom <- M.new numSlices bitsPerSlice
                            mapM_ (M.insert mutableBloom) initList
                            return mutableBloom
-          freezeHashFnsFromMutableBloom = runST $ fmap mutHashFns mutableBloom
 
 -- | Returns the total length (M = m*k) of the filter.
 length :: ImmutableBloom a -> Word32

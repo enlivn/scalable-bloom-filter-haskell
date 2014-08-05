@@ -22,9 +22,13 @@ new :: (Hashable a) => Int -> Word32 -> ST s (MutableBloom s a)
 new numSlices bitsPerSlice = return . MutableBloom bitsPerSlice (genHashes numSlices) =<< newArray (0, _M) False
     where _M = fromIntegral numSlices * bitsPerSlice -- ^ total number of bits in the filter (M = k * m)
 
+-- | Returns the total length (M = m*k) of the filter.
 length :: MutableBloom s a -> ST s Word32
 length filt = fmap ((1 +) . snd) (getBounds (mutBitArray filt))
 
+-- | Inserts an element into the filter.
+-- The first argument is the filter
+-- The second argument is the element to insert
 insert :: MutableBloom s a -> a -> ST s ()
 insert filt element = getHashIndices filt element >>= mapM_ (\bit -> writeArray (mutBitArray filt) bit True)
 
