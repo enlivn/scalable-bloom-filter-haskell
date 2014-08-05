@@ -16,11 +16,13 @@ import Data.Word (Word32)
 -- boxed types are represented by a pointer to a heap object
 
 data MutableBloom s a = MutableBloom {
+                            mutBitsPerSlice :: Word32,
                             mutHashFns :: a -> [Word32],
                             mutBitArray :: STUArray s Word32 Bool
                         }
 
 data ImmutableBloom a = ImmutableBloom {
+                            immutBitsPerSlice :: Word32,
                             immutHashFns :: a -> [Word32],
                             immutBitArray :: UArray Word32 Bool -- note: no need for the ST monad since this is immutable
                         }
