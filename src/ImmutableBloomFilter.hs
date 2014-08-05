@@ -6,6 +6,7 @@ module ImmutableBloomFilter (ImmutableBloom,
                              notElem) where
 
 import Types
+import Hash.Hash
 import Data.Array.Unboxed (bounds, (!))
 import Data.Array.ST (runSTUArray)
 import Data.Word (Word32)
