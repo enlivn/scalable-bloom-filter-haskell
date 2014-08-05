@@ -16,10 +16,11 @@ import Prelude hiding (length, elem, notElem)
 import Types
 
 -- | The 'new' function creates a mutable bloom filter
--- The first argument is the number of slices in the filter
--- The second argument is the number of bits in each slice
+-- The first argument is the number of slices in the filter (k)
+-- The second argument is the number of bits in each slice (m)
 new :: (Hashable a) => Int -> Word32 -> ST s (MutableBloom s a)
-new numSlices bitsPerSlice = return . MutableBloom bitsPerSlice (genHashes numSlices) =<< newArray (0, fromIntegral numSlices * bitsPerSlice) False
+new numSlices bitsPerSlice = return . MutableBloom bitsPerSlice (genHashes numSlices) =<< newArray (0, _M) False
+    where _M = fromIntegral numSlices * bitsPerSlice -- ^ total number of bits in the filter (M = k * m)
 
 length :: MutableBloom s a -> ST s Word32
 length filt = fmap ((1 +) . snd) (getBounds (mutBitArray filt))
