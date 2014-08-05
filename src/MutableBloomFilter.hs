@@ -22,21 +22,23 @@ new :: (Hashable a) => Int -> Word32 -> ST s (MutableBloom s a)
 new numSlices bitsPerSlice = return . MutableBloom bitsPerSlice (genHashes numSlices) =<< newArray (0, fromIntegral numSlices * bitsPerSlice) False
 
 length :: MutableBloom s a -> ST s Word32
-length x = fmap ((1 +) . snd) (getBounds (mutBitArray x))
+length filt = fmap ((1 +) . snd) (getBounds (mutBitArray filt))
 
 insert :: MutableBloom s a -> a -> ST s ()
-insert x y = getHashIndices x y >>= mapM_ (\bit -> writeArray (mutBitArray x) bit True)
+insert filt element = getHashIndices filt element >>= mapM_ (\bit -> writeArray (mutBitArray filt) bit True)
 
 -- | Given an element to insert, return the corresponding indices that need
 -- to be set in the filter
 getHashIndices :: MutableBloom s a -> a -> ST s [Word32]
-getHashIndices x y = length x >>= \len -> return . addSliceOffsets $ perSliceIndices
-    where bitsPerSlice = mutBitsPerSlice x
-          addSliceOffsets = (flip . zipWith) (\x offset -> offset*bitsPerSlice + x) [0..]
-          perSliceIndices = map (`mod` bitsPerSlice) $ mutHashFns x y
+getHashIndices filt element = return . addSliceOffsets $ indicesWithinSlice
+    where addSliceOffsets = (flip . zipWith) (\indexWithinSlice sliceOffset -> sliceOffset*bitsPerSlice + indexWithinSlice) [0..]
+          indicesWithinSlice = map (`mod` bitsPerSlice) $ mutHashFns filt element
+          bitsPerSlice = mutBitsPerSlice filt
 
+-- | Returns True if the element is in the filter
 elem :: MutableBloom s a -> a -> ST s Bool
-elem x y = liftM and $ getHashIndices x y >>= mapM (readArray (mutBitArray x))
+elem filt element = liftM and $ getHashIndices filt element >>= mapM (readArray (mutBitArray filt))
 
+-- | Complement of 'elem'.
 notElem :: MutableBloom s a -> a -> ST s Bool
-notElem x y = liftM not $ elem x y
+notElem filt element = liftM not $ elem filt element

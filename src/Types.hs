@@ -16,13 +16,14 @@ import Data.Word (Word32)
 -- boxed types are represented by a pointer to a heap object
 
 data MutableBloom s a = MutableBloom {
-                            mutBitsPerSlice :: Word32,
-                            mutHashFns :: a -> [Word32],
-                            mutBitArray :: STUArray s Word32 Bool
+                            mutBitsPerSlice :: Word32, -- ^ number of bits per slice
+                            mutHashFns :: a -> [Word32], -- ^ hash functions
+                            mutBitArray :: STUArray s Word32 Bool -- ^ array storing the state of the filter
                         }
 
 data ImmutableBloom a = ImmutableBloom {
-                            immutBitsPerSlice :: Word32,
-                            immutHashFns :: a -> [Word32],
-                            immutBitArray :: UArray Word32 Bool -- note: no need for the ST monad since this is immutable
+                            immutBitsPerSlice :: Word32, -- ^ number of bits per slice
+                            immutHashFns :: a -> [Word32], -- ^ hash functions
+                            immutBitArray :: UArray Word32 Bool -- ^ array storing the state of the filter.
+                                                                --   Note that we don't need the ST monad since this is immutable
                         }
