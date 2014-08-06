@@ -1,9 +1,9 @@
 module MutableBloomFilter(MutableBloom,
-                          elem,
-                          notElem,
-                          insert,
+                          new,
                           length,
-                          new) where
+                          insert,
+                          elem,
+                          notElem) where
 
 import Control.Monad (liftM)
 import Control.Monad.ST (ST, runST)
