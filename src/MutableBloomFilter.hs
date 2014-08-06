@@ -30,10 +30,8 @@ import Types
 -- | Create a mutable bloom filter.
 -- The first argument is the false positive rate desired (between 0 and 1) (P)
 -- The second argument is a list of values with which to initialize the filter
-new :: Hashable a => Double -> Word32 -> Either String (ST s (MutableBloom s a))
-new p n = case (I.calculateFilterParams p n) of
-    Left err -> Left err
-    Right (bitsPerSlice, numSlices) -> Right $ I.new' numSlices bitsPerSlice
+new :: Hashable a => Double -> Word32 -> ST s (MutableBloom s a)
+new p n = uncurry I.new' (I.calculateFilterParams p n)
 
 -- | Returns the total length (M = m*k) of the filter.
 length :: MutableBloom s a -> ST s Word32

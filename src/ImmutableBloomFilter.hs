@@ -28,17 +28,16 @@ import Prelude hiding (length, elem, notElem)
 -- | Create an immutable bloom filter.
 -- The first argument is the false positive rate desired (between 0 and 1) (P)
 -- The second argument is a list of values with which to initialize the filter
-new :: (Hashable a) => Double -> [a] -> Either String (ImmutableBloom a)
-new falsePositiveRate initList = case (I.calculateFilterParams falsePositiveRate (genericLength initList)) of
-    Left err -> Left err
-    Right (bitsPerSlice, numSlices) -> Right $ ImmutableBloomFilter.new' numSlices bitsPerSlice initList
+new :: (Hashable a) => Double -> [a] -> ImmutableBloom a
+new falsePositiveRate initList = uncurry (ImmutableBloomFilter.new' initList) $
+                                 I.calculateFilterParams falsePositiveRate (genericLength initList)
 
 -- | Create an immutable bloom filter.
 -- The first argument is the number of slices in the filter (k)
 -- The second argument is the number of bits per slice (m)
 -- The third argument is a list of values with which to initialize the filter
-new' :: (Hashable a) => Int -> Word32 -> [a] -> ImmutableBloom a
-new' numSlices bitsPerSlice initList = ImmutableBloom bitsPerSlice freezeHashFnsFromMutableBloom freezeArrayFromMutableBloom
+new' :: (Hashable a) => [a] -> Int -> Word32 -> ImmutableBloom a
+new' initList numSlices bitsPerSlice = ImmutableBloom bitsPerSlice freezeHashFnsFromMutableBloom freezeArrayFromMutableBloom
     where freezeHashFnsFromMutableBloom = runST $ fmap mutHashFns mutableBloom
           freezeArrayFromMutableBloom = runSTUArray (fmap mutBitArray mutableBloom)
           mutableBloom = do
