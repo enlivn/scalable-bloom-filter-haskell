@@ -1,4 +1,3 @@
-{-# LANGUAGE OverlappingInstances #-}
 module MutableBloomFilter(MutableBloom,
                           elem,
                           notElem,

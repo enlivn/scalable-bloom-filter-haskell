@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleInstances, UndecidableInstances #-}
 module Types where
 
 import Data.Array.ST (STUArray)

@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, OverlappingInstances, UndecidableInstances, ForeignFunctionInterface #-}
+{-# LANGUAGE FlexibleInstances, UndecidableInstances, ForeignFunctionInterface #-}
 module Hash.Hash where
 
 import Control.Monad (foldM)
