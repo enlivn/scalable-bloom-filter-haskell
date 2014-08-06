@@ -46,11 +46,15 @@ new p initList = runST $ do
 length :: ImmutableBloom a -> Word32
 length filt = ((1 +) . snd) (bounds (immutBitArray filt))
 
--- | Given an element to insert, return the corresponding indices that need
--- to be set in the filter
+-- | Given an element to insert, return the corresponding indices that should
+-- be set in the filter
 getHashIndices :: ImmutableBloom a -> a -> [Word32]
-getHashIndices filt y = map (`mod` len) $ immutHashFns filt y
-    where len = ImmutableBloomFilter.length filt
+getHashIndices filt element = addSliceOffsets indicesWithinSlice
+    where addSliceOffsets = (flip . zipWith) (\indexWithinSlice sliceOffset ->
+                                                sliceOffset*bitsPerSlice + indexWithinSlice)
+                                             [0..]
+          indicesWithinSlice = map (`mod` bitsPerSlice) $ immutHashFns filt element
+          bitsPerSlice = immutBitsPerSlice filt
 
 -- | Returns True if the element is in the filter
 elem :: ImmutableBloom a -> a -> Bool

@@ -85,8 +85,8 @@ length (MutableBloom _ _ bitArray) = fmap ((1 +) . snd) (getBounds bitArray)
 insert :: MutableBloom s a -> a -> ST s ()
 insert filt element = getHashIndices filt element >>= mapM_ (\bit -> writeArray (mutBitArray filt) bit True)
 
--- | Given an element to insert, return the corresponding indices that need
--- to be set in the filter
+-- | Given an element to insert, return the corresponding indices that should
+-- be set in the filter
 getHashIndices :: MutableBloom s a -> a -> ST s [Word32]
 getHashIndices filt element = return . addSliceOffsets $ indicesWithinSlice
     where addSliceOffsets = (flip . zipWith) (\indexWithinSlice sliceOffset -> sliceOffset*bitsPerSlice + indexWithinSlice) [0..]
