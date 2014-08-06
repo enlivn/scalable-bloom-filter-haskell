@@ -37,9 +37,10 @@ hashStorableListWithSeed seed list = unsafePerformIO $ withArrayLen list $ \list
     hash64 seed (fromIntegral $ listLen * sizeOf (head list)) listPtr
 
 -- tuples
-instance (Storable a, Storable b) => Hashable (a, b) where
+instance (Hashable a, Hashable b) => Hashable (a, b) where
     hashWithSeed seed (x,y) = hash' x . hash' y $ seed
-        where hash' x seed = hashStorableWithSeed seed x
+        where hash' :: Hashable a => a -> Word64 -> Word64
+              hash' x seed = hashWithSeed seed x
 
 -- strict bytestrings
 -- bytestrings are much more efficient than strings (which are linked lists
@@ -82,7 +83,7 @@ genHashes numHashes val = [h2 + h1*i | i <- [0..(fromIntegral numHashes)]]
           h2 = fromIntegral (shiftR h 32) .&. maxBound
 
 -- | Generates a 64-bit hash at one go.
-hash64 :: Word64 -> CSize  -> Ptr a  -> IO Word64
+hash64 :: Storable a => Word64 -> CSize  -> Ptr a  -> IO Word64
 hash64 seed len val = with seed $ (\seedPtr -> do
     let ptrSeedLower = castPtr seedPtr
         ptrSeedUpper = plusPtr ptrSeedLower 4

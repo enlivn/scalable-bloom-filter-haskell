@@ -1,40 +1,28 @@
 module ImmutableBloomFilter (ImmutableBloom,
-                             ImmutableBloomFilter.new,
+                             new,
                              length,
                              elem,
                              notElem) where
 
 import Control.Monad (liftM)
-import Control.Monad.ST (runST)
+import Control.Monad.ST (runST, ST)
 import Types
 import Hash.Hash
 import Data.Array.Unboxed (bounds, (!))
-import Data.Array.ST (runSTUArray)
+import Data.Array.ST (STUArray, runSTUArray)
 import Data.List (genericLength)
 import Data.Word (Word32)
+import MutableBloomFilter as M (insert)
+import MutableBloomFilter.Internal as I
 import Prelude hiding (length, elem, notElem)
-import MutableBloomFilter as M (new, insert)
 
 -- | Create an immutable bloom filter.
 -- The first argument is the false positive rate desired (between 0 and 1) (P)
 -- The second argument is a list of values with which to initialize the filter
 new :: (Hashable a) => Double -> [a] -> Either String (ImmutableBloom a)
-new falsePositiveRate initList = case (calculateFilterParams falsePositiveRate (genericLength initList)) of
+new falsePositiveRate initList = case (I.calculateFilterParams falsePositiveRate (genericLength initList)) of
     Left err -> Left err
-    Right (bitsPerSlice, numSlices) -> Right $ new' numSlices bitsPerSlice initList
-
--- | Given error rate (P) and capacity (n), returns (bits per slice (m), number of slices (k))
--- Note that m*k = M (filter size)
--- We assume in the equations below that the fill ratio (p) is optimal i.e., p = 1/2. 'Optimal' here means
--- we've maximized the capacity n
-calculateFilterParams :: Double -> Word32 -> Either String (Word32, Int)
-calculateFilterParams p n | n <= 0 = Left "n must be strictly positive"
-                        | p <= 0 || p >= 1 = Left "p must be between 0 and 1"
-                        | otherwise = Right (fromIntegral . truncate $ m, k)
-    where k = ceiling $ logBase 2 (1 / p) :: Int-- k = log2 (1/P)
-          m = n' * abs (log p) / (k' * (log 2)**2) :: Double -- m = n * abs(log(P))/(k*(ln2)^2)
-          n' = fromIntegral n :: Double
-          k' = fromIntegral k :: Double
+    Right (bitsPerSlice, numSlices) -> Right $ ImmutableBloomFilter.new' numSlices bitsPerSlice initList
 
 -- | Create an immutable bloom filter.
 -- The first argument is the number of slices in the filter (k)
@@ -45,7 +33,7 @@ new' numSlices bitsPerSlice initList = ImmutableBloom bitsPerSlice freezeHashFns
     where freezeHashFnsFromMutableBloom = runST $ fmap mutHashFns mutableBloom
           freezeArrayFromMutableBloom = runSTUArray (fmap mutBitArray mutableBloom)
           mutableBloom = do
-                           mutableBloom <- M.new numSlices bitsPerSlice
+                           mutableBloom <- I.new' numSlices bitsPerSlice
                            mapM_ (M.insert mutableBloom) initList
                            return mutableBloom
 
