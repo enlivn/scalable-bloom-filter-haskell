@@ -20,6 +20,7 @@ import Types
 import Hash.Hash
 import Data.Array.MArray (freeze)
 import Data.Array.Unboxed (bounds, (!))
+import Data.Array.Unsafe (unsafeFreeze)
 import Data.Array.ST (STUArray, runSTUArray)
 import Data.List (genericLength)
 import Data.Word (Word32)
@@ -34,7 +35,9 @@ new :: Hashable a => Double -> [a] -> ImmutableBloom a
 new p initList = runST $ do
     mutableBloom <- MutableBloomFilter.new p (genericLength initList)
     mapM_ (MutableBloomFilter.insert mutableBloom) initList
-    frozenMutableArray <- freeze (mutBitArray mutableBloom)
+    frozenMutableArray <- unsafeFreeze (mutBitArray mutableBloom) -- for copying STUArray -> UArray, unsafeFreeze is
+                                                                  -- O(n) if compiled without -o,
+                                                                  -- O(1) if compiled with -o
     return $ ImmutableBloom (mutBitsPerSlice mutableBloom)
                             (mutHashFns mutableBloom)
                             frozenMutableArray

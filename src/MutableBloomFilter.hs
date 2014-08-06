@@ -9,6 +9,7 @@ The main differences between this and ImmutableBloomFilter are:
     1. the latter can be used from pure code
     2. the latter does NOT allow insertion of elements once initialized.
 -}
+{-# LANGUAGE RankNTypes #-}
 
 module MutableBloomFilter(MutableBloom,
                           new,
@@ -19,11 +20,12 @@ module MutableBloomFilter(MutableBloom,
 
 import Control.Monad (liftM)
 import Control.Monad.ST (ST, runST)
-import Data.Array.MArray (newArray, getBounds, writeArray, readArray, freeze)
-import Data.Array.ST (runSTUArray)
+import Data.Array.MArray (MArray, newArray, getBounds, writeArray, readArray, freeze)
+import Data.Array.ST (runSTUArray, STUArray)
 import Data.Array.Unsafe (unsafeFreeze)
 import Data.List (genericLength)
 import Data.Word (Word32)
+import Data.Array.Unboxed (UArray)
 import Hash.Hash
 import Prelude hiding (length, elem, notElem)
 import Types
@@ -33,6 +35,22 @@ import Types
 -- The second argument is a list of values with which to initialize the filter
 new :: Hashable a => Double -> Word32 -> ST s (MutableBloom s a)
 new p n = uncurry new' (calculateFilterParams p n)
+
+-- | Convert a mutable bloom filter in ST to an immutable bloom filter suitable
+-- for access from pure code
+toImmutable :: (forall s. ST s (MutableBloom s a)) -> ImmutableBloom a
+toImmutable mb = runST $ do
+    mutableBloom <- mb
+    let bitsPerSlice = mutBitsPerSlice mutableBloom
+        hashFuns = mutHashFns mutableBloom
+    f <- unsafeFreeze $ mutBitArray mutableBloom -- for copying STUArray -> UArray, unsafeFreeze is
+                                                 -- O(n) if compiled without -o,
+                                                 -- O(1) if compiled with -o
+    return $ ImmutableBloom bitsPerSlice hashFuns f
+
+-- | Convert a mutable bloom filter to an immutable bloom filter in ST
+toImmutable' :: Hashable a => (MutableBloom s a) -> ST s (ImmutableBloom a)
+toImmutable' (MutableBloom bitsPerSlice hashFuns bitArray) = return . ImmutableBloom bitsPerSlice hashFuns =<< freeze bitArray
 
 -- | Calculate the bits per slice (m) and number of slices (k) filter parameters
 -- The first argument is the desired error rate (P)
@@ -59,7 +77,7 @@ new' numSlices bitsPerSlice = return . MutableBloom bitsPerSlice (genHashes numS
 
 -- | Returns the total length (M = m*k) of the filter.
 length :: MutableBloom s a -> ST s Word32
-length filt = fmap ((1 +) . snd) (getBounds (mutBitArray filt))
+length (MutableBloom _ _ bitArray) = fmap ((1 +) . snd) (getBounds bitArray)
 
 -- | Inserts an element into the filter.
 -- The first argument is the filter
