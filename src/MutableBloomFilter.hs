@@ -1,3 +1,14 @@
+{-|
+Module      : MutableBloomFilter
+Description : Mutable bloom filter allowing insertion of elements.
+
+This bloom filter has a bit array that is partitioned into slices,
+in line with the paper 'Scalable Bloom Filters' by Almeida et. al
+(http://gsd.di.uminho.pt/members/cbm/ps/dbloom.pdf)
+The main difference between this and the ImmutableBloomFilter is
+that the latter does NOT allow insertion of elements once it has
+been initialized.
+-}
 module MutableBloomFilter(MutableBloom,
                           new,
                           length,

@@ -1,3 +1,12 @@
+{-|
+Module      : ImmutableBloomFilter
+Description : Immutable bloom filter that, once initialized, does not
+              allow insertion of any more elements.
+
+The main difference between this and MutableBloomFilter is
+that the latter allows insertion of elements even after it has
+been created.
+-}
 module ImmutableBloomFilter (ImmutableBloom,
                              new,
                              length,

@@ -1,3 +1,8 @@
+{-|
+Module      : Hash
+Description : Define hashing functions for use in bloom filters.
+-}
+
 {-# LANGUAGE FlexibleInstances, UndecidableInstances, ForeignFunctionInterface #-}
 module Hash.Hash where
 

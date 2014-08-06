@@ -1,3 +1,7 @@
+{-|
+Module      : Types
+Description : Define types.
+-}
 module Types where
 
 import Data.Array.ST (STUArray)

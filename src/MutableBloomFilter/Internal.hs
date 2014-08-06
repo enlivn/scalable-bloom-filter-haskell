@@ -1,3 +1,10 @@
+{-|
+Module      : MutableBloomFilter.Internal
+Description : Module for internal use only.
+
+Provides convenience functions pertaining to mutable bloom filters, for
+use in both the MutableBloomFilter and ImmutableBloomFilter modules.
+-}
 module MutableBloomFilter.Internal where
 
 import Types
