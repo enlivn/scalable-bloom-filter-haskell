@@ -5,10 +5,11 @@ Description : Mutable bloom filter allowing insertion of elements.
 This bloom filter has a bit array that is partitioned into slices,
 in line with the paper 'Scalable Bloom Filters' by Almeida et. al
 (http://gsd.di.uminho.pt/members/cbm/ps/dbloom.pdf)
-The main difference between this and the ImmutableBloomFilter is
-that the latter does NOT allow insertion of elements once it has
-been initialized.
+The main differences between this and ImmutableBloomFilter are:
+    1. the latter can be used from pure code
+    2. the latter does NOT allow insertion of elements once initialized.
 -}
+
 module MutableBloomFilter(MutableBloom,
                           new,
                           length,
@@ -18,12 +19,12 @@ module MutableBloomFilter(MutableBloom,
 
 import Control.Monad (liftM)
 import Control.Monad.ST (ST, runST)
-import Data.Array.MArray (newArray, getBounds, writeArray, readArray)
+import Data.Array.MArray (newArray, getBounds, writeArray, readArray, freeze)
 import Data.Array.ST (runSTUArray)
+import Data.Array.Unsafe (unsafeFreeze)
 import Data.List (genericLength)
 import Data.Word (Word32)
 import Hash.Hash
-import MutableBloomFilter.Internal as I
 import Prelude hiding (length, elem, notElem)
 import Types
 
@@ -31,7 +32,30 @@ import Types
 -- The first argument is the false positive rate desired (between 0 and 1) (P)
 -- The second argument is a list of values with which to initialize the filter
 new :: Hashable a => Double -> Word32 -> ST s (MutableBloom s a)
-new p n = uncurry I.new' (I.calculateFilterParams p n)
+new p n = uncurry new' (calculateFilterParams p n)
+
+-- | Calculate the bits per slice (m) and number of slices (k) filter parameters
+-- The first argument is the desired error rate (P)
+-- The second argument is the capacity (n)
+-- Returns (number of slices, bits per slice)
+-- Note that m*k = M (filter size)
+-- We assume in the equations below that the fill ratio (p) is optimal i.e., p = 1/2. 'Optimal' here means
+-- we've maximized the capacity n
+calculateFilterParams :: Double -> Word32 -> (Int, Word32)
+calculateFilterParams p n | n <= 0 = error "n must be strictly positive"
+                          | p <= 0 || p >= 1 = error "p must be between 0 and 1"
+                          | otherwise = (k, fromIntegral . truncate $ m)
+    where k = ceiling $ logBase 2 (1 / p) :: Int-- k = log2 (1/P)
+          m = n' * abs (log p) / (k' * log 2 **2) :: Double -- m = n * abs(log(P))/(k*(ln2)^2)
+          n' = fromIntegral n :: Double
+          k' = fromIntegral k :: Double
+
+-- | Create a mutable bloom filter
+-- The first argument is the number of slices in the filter (k)
+-- The second argument is the number of bits in each slice (m)
+new' :: Hashable a => Int -> Word32 -> ST s (MutableBloom s a)
+new' numSlices bitsPerSlice = return . MutableBloom bitsPerSlice (genHashes numSlices) =<< newArray (0, _M) False
+    where _M = fromIntegral numSlices * bitsPerSlice -- ^ total number of bits in the filter (M = k * m)
 
 -- | Returns the total length (M = m*k) of the filter.
 length :: MutableBloom s a -> ST s Word32
