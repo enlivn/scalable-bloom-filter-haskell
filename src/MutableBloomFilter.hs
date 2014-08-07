@@ -52,9 +52,9 @@ toImmutable mb = runST $ do
 -- | Convert a mutable bloom filter to an immutable bloom filter in ST
 toImmutable' :: Hashable a => (MutableBloom s a) -> ST s (ImmutableBloom a)
 toImmutable' (MutableBloom bitsPerSlice hashFuns bitArray) = return . ImmutableBloom bitsPerSlice hashFuns
-                                                             =<< freeze bitArray -- for copying STUArray -> UArray, unsafeFreeze is
-                                                                                 -- O(n) if compiled without -o,
-                                                                                 -- O(1) if compiled with -o
+                                                             =<< unsafeFreeze bitArray -- for copying STUArray -> UArray, unsafeFreeze is
+                                                                                       -- O(n) if compiled without -o,
+                                                                                       -- O(1) if compiled with -o
 
 -- | Calculate the bits per slice (m) and number of slices (k) filter parameters
 -- The first argument is the desired error rate (P)
