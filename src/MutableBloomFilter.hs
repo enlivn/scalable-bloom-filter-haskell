@@ -16,6 +16,7 @@ module MutableBloomFilter(MutableBloom,
                           length,
                           insert,
                           elem,
+                          toImmutable,
                           notElem) where
 
 import Control.Monad (liftM)
@@ -32,12 +33,12 @@ import Types
 
 -- | Create a mutable bloom filter.
 -- The first argument is the false positive rate desired (between 0 and 1) (P)
--- The second argument is a list of values with which to initialize the filter
+-- The second argument is the capacity of the filter (n)
 new :: Hashable a => Double -> Word32 -> ST s (MutableBloom s a)
 new p n = uncurry new' (calculateFilterParams p n)
 
 -- | Convert a mutable bloom filter in ST to an immutable bloom filter suitable
--- for access from pure code
+-- for accessing from pure code
 toImmutable :: (forall s. ST s (MutableBloom s a)) -> ImmutableBloom a
 toImmutable mb = runST $ do
     mutableBloom <- mb
@@ -50,7 +51,10 @@ toImmutable mb = runST $ do
 
 -- | Convert a mutable bloom filter to an immutable bloom filter in ST
 toImmutable' :: Hashable a => (MutableBloom s a) -> ST s (ImmutableBloom a)
-toImmutable' (MutableBloom bitsPerSlice hashFuns bitArray) = return . ImmutableBloom bitsPerSlice hashFuns =<< freeze bitArray
+toImmutable' (MutableBloom bitsPerSlice hashFuns bitArray) = return . ImmutableBloom bitsPerSlice hashFuns
+                                                             =<< freeze bitArray -- for copying STUArray -> UArray, unsafeFreeze is
+                                                                                 -- O(n) if compiled without -o,
+                                                                                 -- O(1) if compiled with -o
 
 -- | Calculate the bits per slice (m) and number of slices (k) filter parameters
 -- The first argument is the desired error rate (P)

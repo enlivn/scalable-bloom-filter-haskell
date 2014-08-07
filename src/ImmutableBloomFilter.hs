@@ -24,23 +24,17 @@ import Data.Array.Unsafe (unsafeFreeze)
 import Data.Array.ST (STUArray, runSTUArray)
 import Data.List (genericLength)
 import Data.Word (Word32)
-import qualified MutableBloomFilter (insert, new)
+import qualified MutableBloomFilter (insert, new, toImmutable)
 import Prelude hiding (length, elem, notElem)
 
 -- | Create an immutable bloom filter.
 -- The first argument is the false positive rate desired (between 0 and 1) (P)
 -- The second argument is a list of values with which to initialize the filter.
--- Once initialized, no values can be added to the filter.
+-- Once initialized, no values can be added to an immutable filter.
+-- Use @MutableBloomFilter.toImmutable@ to convert a mutable bloom filter to an
+-- immutable one suitable for accessing from pure code.
 new :: Hashable a => Double -> [a] -> ImmutableBloom a
-new p initList = runST $ do
-    mutableBloom <- MutableBloomFilter.new p (genericLength initList)
-    mapM_ (MutableBloomFilter.insert mutableBloom) initList
-    frozenMutableArray <- unsafeFreeze (mutBitArray mutableBloom) -- for copying STUArray -> UArray, unsafeFreeze is
-                                                                  -- O(n) if compiled without -o,
-                                                                  -- O(1) if compiled with -o
-    return $ ImmutableBloom (mutBitsPerSlice mutableBloom)
-                            (mutHashFns mutableBloom)
-                            frozenMutableArray
+new p initList = MutableBloomFilter.toImmutable $ MutableBloomFilter.new p (genericLength initList)
 
 -- | Returns the total length (M = m*k) of the filter.
 length :: ImmutableBloom a -> Word32
