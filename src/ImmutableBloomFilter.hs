@@ -34,7 +34,10 @@ import Prelude hiding (length, elem, notElem)
 -- Use @MutableBloomFilter.toImmutable@ to convert a mutable bloom filter to an
 -- immutable one suitable for accessing from pure code.
 new :: Hashable a => Double -> [a] -> ImmutableBloom a
-new p initList = MutableBloomFilter.toImmutable $ MutableBloomFilter.new p (genericLength initList)
+new p initList = MutableBloomFilter.toImmutable $ do
+    mutableBloom <- MutableBloomFilter.new p (genericLength initList)
+    mapM_ (MutableBloomFilter.insert mutableBloom) initList
+    return mutableBloom
 
 -- | Returns the total length (M = m*k) of the filter.
 length :: ImmutableBloom a -> Word32
