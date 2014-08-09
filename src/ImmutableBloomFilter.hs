@@ -31,10 +31,8 @@ import Prelude hiding (length, elem, notElem)
 -- The first argument is the false positive rate desired (between 0 and 1) (P)
 -- The second argument is a list of values with which to initialize the filter.
 -- Once initialized, no values can be added to an immutable filter.
--- Use @MutableBloomFilter.toImmutable@ to convert a mutable bloom filter to an
--- immutable one suitable for accessing from pure code.
-new :: Hashable a => Double -> [a] -> ImmutableBloom a
-new p initList = MutableBloomFilter.toImmutable $ do
+newFromList :: Hashable a => Double -> [a] -> ImmutableBloom a
+newFromList p initList = MutableBloomFilter.toImmutable $ do
     mutableBloom <- MutableBloomFilter.new p (genericLength initList)
     mapM_ (MutableBloomFilter.insert mutableBloom) initList
     return mutableBloom

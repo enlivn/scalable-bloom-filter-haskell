@@ -37,6 +37,14 @@ import Types
 new :: Hashable a => Double -> Word32 -> ST s (MutableBloom s a)
 new p n = uncurry new' (calculateFilterParams p n)
 
+-- | Create a mutable bloom filter and initialize it with the list passed in.
+-- The first argument is the false positive rate desired (between 0 and 1) (P)
+-- The second argument is the list of values with which to initialize the filter.
+fromList :: Hashable a => Double -> [a] -> ST s (MutableBloom s a)
+fromList p initList = new p (genericLength initList) >>= \mb -> do
+    insertList mb initList
+    return mb
+
 -- | Convert a mutable bloom filter in ST to an immutable bloom filter suitable
 -- for accessing from pure code
 toImmutable :: (forall s. ST s (MutableBloom s a)) -> ImmutableBloom a
@@ -88,6 +96,12 @@ length (MutableBloom _ _ bitArray) = fmap ((1 +) . snd) (getBounds bitArray)
 -- The second argument is the element to insert
 insert :: MutableBloom s a -> a -> ST s ()
 insert filt element = getHashIndices filt element >>= mapM_ (\bit -> writeArray (mutBitArray filt) bit True)
+
+-- | Inserts multiple elements into the filter.
+-- The first argument is the filter
+-- The second argument is the list of elements to insert
+insertList :: MutableBloom s a -> [a] -> ST s ()
+insertList filt elementList = mapM_ (insert filt) elementList
 
 -- | Given an element to insert, return the corresponding indices that should
 -- be set in the filter
