@@ -1,29 +1,60 @@
-.PHONY: dirs all clean cl
+.PHONY: makedirs all test clean cl
 
 GHC = ghc
-GHCFLAGS = --make
+GHCFLAGS = -w -O2
 CLASSDIR = obj
 SRCDIR = src
+TESTDIR = test
 
 .SUFFIXES: .hs .o
 
-$(CLASSDIR)/%.o : $(SRCDIR)/%.hs
-	@$(GHC) $(GHCFLAGS) -isrc -outputdir $(CLASSDIR) $<
+# -----------------
+#  Common targets
+# -----------------
+all: makedirs source test
 
-all: dirs classestocompile
-
-SOURCEFILES := \
-				Hash/Hash.hs \
-				ImmutableBloomFilter.hs \
-				MutableBloomFilter.hs \
-				Types.hs \
-
-classestocompile: $(addprefix $(CLASSDIR)/, $(SOURCEFILES:.hs=.o))
-
-dirs:
+makedirs:
 	@mkdir -p $(CLASSDIR)
 
 cl: clean
 
 clean:
 	@rm -rf $(CLASSDIR)
+
+# -----------------
+# Source Files
+# -----------------
+SOURCEFILES := \
+				Hash/Hash.hs \
+				ImmutableBloomFilter.hs \
+
+SOURCEFILES_C := \
+				$(SRCDIR)/Hash/lookup3.c \
+
+$(CLASSDIR)/%.o : $(SRCDIR)/%.hs
+	@echo ""
+	@echo "--------------------------------------------------------------------"
+	@echo "Compiling source file:\t" $<
+	@echo "--------------------------------------------------------------------"
+	@$(GHC) --make $(GHCFLAGS) -isrc -outputdir $(CLASSDIR) $<
+
+SOURCEFILESTOCOMPILE = $(addprefix $(CLASSDIR)/, $(SOURCEFILES:.hs=.o))
+
+source: makedirs $(SOURCEFILESTOCOMPILE)
+
+# -----------------
+# Test Files
+# -----------------
+$(CLASSDIR)/%.o : $(TESTDIR)/%.hs
+	@echo ""
+	@echo "--------------------------------------------------------------------"
+	@echo "Compiling test file:\t" $<
+	@echo "--------------------------------------------------------------------"
+	@$(GHC) --make $(GHCFLAGS) -isrc -outputdir $(CLASSDIR) $(SOURCEFILES_C) $<
+
+TESTFILES := \
+				MutableBloomCheck.hs \
+
+TESTFILESTOCOMPILE = $(addprefix $(CLASSDIR)/, $(TESTFILES:.hs=.o))
+
+test: makedirs $(TESTFILESTOCOMPILE)

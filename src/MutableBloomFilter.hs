@@ -17,16 +17,15 @@ module MutableBloomFilter(MutableBloom,
                           insert,
                           elem,
                           toImmutable,
+                          fromList,
                           notElem) where
 
 import Control.Monad (liftM)
 import Control.Monad.ST (ST, runST)
-import Data.Array.MArray (MArray, newArray, getBounds, writeArray, readArray, freeze)
-import Data.Array.ST (runSTUArray, STUArray)
+import Data.Array.MArray (MArray, newArray, getBounds, writeArray, readArray)
 import Data.Array.Unsafe (unsafeFreeze)
 import Data.List (genericLength)
 import Data.Word (Word32)
-import Data.Array.Unboxed (UArray)
 import Hash.Hash
 import Prelude hiding (length, elem, notElem)
 import Types
@@ -58,11 +57,11 @@ toImmutable mb = runST $ do
     return $ ImmutableBloom bitsPerSlice hashFuns f
 
 -- | Convert a mutable bloom filter to an immutable bloom filter in ST
-toImmutable' :: Hashable a => (MutableBloom s a) -> ST s (ImmutableBloom a)
-toImmutable' (MutableBloom bitsPerSlice hashFuns bitArray) = return . ImmutableBloom bitsPerSlice hashFuns
-                                                             =<< unsafeFreeze bitArray -- for copying STUArray -> UArray, unsafeFreeze is
-                                                                                       -- O(n) if compiled without -o,
-                                                                                       -- O(1) if compiled with -o
+--toImmutable' :: Hashable a => (MutableBloom s a) -> ST s (ImmutableBloom a)
+--toImmutable' (MutableBloom bitsPerSlice hashFuns bitArray) = return . ImmutableBloom bitsPerSlice hashFuns
+--                                                             =<< unsafeFreeze bitArray -- for copying STUArray -> UArray, unsafeFreeze is
+--                                                                                       -- O(n) if compiled without -o,
+--                                                                                       -- O(1) if compiled with -o
 
 -- | Calculate the bits per slice (m) and number of slices (k) filter parameters
 -- The first argument is the desired error rate (P)
@@ -74,9 +73,9 @@ toImmutable' (MutableBloom bitsPerSlice hashFuns bitArray) = return . ImmutableB
 calculateFilterParams :: Double -> Word32 -> (Int, Word32)
 calculateFilterParams p n | n <= 0 = error "n must be strictly positive"
                           | p <= 0 || p >= 1 = error "p must be between 0 and 1"
-                          | otherwise = (k, fromIntegral . truncate $ m)
+                          | otherwise = (k, fromIntegral m)
     where k = ceiling $ logBase 2 (1 / p) :: Int-- k = log2 (1/P)
-          m = n' * abs (log p) / (k' * log 2 **2) :: Double -- m = n * abs(log(P))/(k*(ln2)^2)
+          m = ceiling $ n' * abs (log p) / (k' * log 2 **2) -- m = n * abs(log(P))/(k*(ln2)^2)
           n' = fromIntegral n :: Double
           k' = fromIntegral k :: Double
 
@@ -101,7 +100,7 @@ insert filt element = getHashIndices filt element >>= mapM_ (\bit -> writeArray 
 -- The first argument is the filter
 -- The second argument is the list of elements to insert
 insertList :: MutableBloom s a -> [a] -> ST s ()
-insertList filt elementList = mapM_ (insert filt) elementList
+insertList filt = mapM_ (insert filt)
 
 -- | Given an element to insert, return the corresponding indices that should
 -- be set in the filter

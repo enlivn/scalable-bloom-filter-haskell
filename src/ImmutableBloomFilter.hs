@@ -9,19 +9,14 @@ The main differences between this and MutableBloomFilter are:
 -}
 
 module ImmutableBloomFilter (ImmutableBloom,
-                             new,
+                             newFromList,
                              length,
                              elem,
                              notElem) where
 
-import Control.Monad (liftM)
-import Control.Monad.ST (runST, ST)
 import Types
 import Hash.Hash
-import Data.Array.MArray (freeze)
 import Data.Array.Unboxed (bounds, (!))
-import Data.Array.Unsafe (unsafeFreeze)
-import Data.Array.ST (STUArray, runSTUArray)
 import Data.List (genericLength)
 import Data.Word (Word32)
 import qualified MutableBloomFilter (insert, new, toImmutable)
