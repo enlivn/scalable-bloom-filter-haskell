@@ -87,7 +87,7 @@ foreign import ccall unsafe "lookup3.h hashlittle2"
 -- The first argument is the number of hash functions to generate
 -- The second argument is the value to hash
 genHashes :: Hashable a => Int -> a -> [Word32]
-genHashes numHashes val = [h2 + h1*i | i <- [0..(fromIntegral numHashes)]]
+genHashes numHashes val = [h2 + h1*i | i <- [1..(fromIntegral numHashes)]]
     where h = hashWithSeed 0x106fc397cf62f64d3 val
           h1 = fromIntegral h
           h2 = fromIntegral (shiftR h 32) .&. maxBound

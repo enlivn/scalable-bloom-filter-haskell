@@ -13,11 +13,12 @@ The main differences between this and ImmutableBloomFilter are:
 
 module MutableBloomFilter(MutableBloom,
                           new,
+                          fromList,
                           length,
                           insert,
+                          insertList,
                           elem,
                           toImmutable,
-                          fromList,
                           notElem) where
 
 import Control.Monad (liftM)
