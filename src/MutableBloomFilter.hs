@@ -12,6 +12,7 @@ The main differences between this and ImmutableBloomFilter are:
 {-# LANGUAGE RankNTypes #-}
 
 module MutableBloomFilter(MutableBloom,
+                          ImmutableBloom,
                           new,
                           fromList,
                           length,

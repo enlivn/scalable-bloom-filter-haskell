@@ -1,4 +1,10 @@
+{-|
+Module      : Main
+Description : QuickCheck tests for Mutable bloom filter
+-}
+
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+
 module Main where
 
 import Hash.Hash

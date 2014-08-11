@@ -50,9 +50,10 @@ $(CLASSDIR)/%.o : $(TESTDIR)/%.hs
 	@echo "--------------------------------------------------------------------"
 	@echo "Compiling test file:\t" $<
 	@echo "--------------------------------------------------------------------"
-	@$(GHC) --make $(GHCFLAGS) -isrc -outputdir $(CLASSDIR) $(SOURCEFILES_C) $<
+	@$(GHC) -rtsopts -isrc -prof -auto-all $(GHCFLAGS) --make -outputdir $(CLASSDIR) $(SOURCEFILES_C) $<
 
 TESTFILES := \
+				MutableBloomProfiling.hs \
 				MutableBloomCheck.hs \
 
 TESTFILESTOCOMPILE = $(addprefix $(CLASSDIR)/, $(TESTFILES:.hs=.o))
