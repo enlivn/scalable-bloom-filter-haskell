@@ -3,7 +3,7 @@ Module      : Hash
 Description : Define hashing functions for use in bloom filters.
 -}
 
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE BangPatterns, ForeignFunctionInterface #-}
 module Hash.Hash where
 
 import Control.Monad (foldM)
@@ -87,10 +87,13 @@ foreign import ccall unsafe "lookup3.h hashlittle2"
 -- The first argument is the number of hash functions to generate
 -- The second argument is the value to hash
 genHashes :: Hashable a => Int -> a -> [Word32]
-genHashes numHashes val = [h2 + h1*i | i <- [1..(fromIntegral numHashes)]]
-    where h = hashWithSeed 0x106fc397cf62f64d3 val
-          h1 = fromIntegral h
-          h2 = fromIntegral (shiftR h 32) .&. maxBound
+genHashes numHashes val = f 1
+    where
+          f y | y == (fromIntegral numHashes + 1) = []
+              | otherwise = h2 + h1*y : f (y+1)
+          !h1 = fromIntegral h
+          !h2 = fromIntegral (shiftR h 32) .&. maxBound
+          !h = hashWithSeed 0x106fc397cf62f64d3 val
 
 -- | Generates a 64-bit hash at one go.
 hash64 :: Storable a => Word64 -> CSize  -> Ptr a  -> IO Word64
