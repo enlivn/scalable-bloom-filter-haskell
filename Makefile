@@ -25,6 +25,7 @@ clean:
 # Source Files
 # -----------------
 SOURCEFILES := \
+				ScalableBloomFilter.hs \
 				Hash/Hash.hs \
 				ImmutableBloomFilter.hs \
 
@@ -53,8 +54,8 @@ $(CLASSDIR)/%.o : $(TESTDIR)/%.hs
 	@$(GHC) -rtsopts -isrc -prof -auto-all $(GHCFLAGS) --make -outputdir $(CLASSDIR) $(SOURCEFILES_C) $<
 
 TESTFILES := \
-				MutableBloomProfiling.hs \
 				MutableBloomCheck.hs \
+				MutableBloomProfiling.hs \
 
 TESTFILESTOCOMPILE = $(addprefix $(CLASSDIR)/, $(TESTFILES:.hs=.o))
 
