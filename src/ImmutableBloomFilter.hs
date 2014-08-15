@@ -10,7 +10,7 @@ The main differences between this and MutableBloomFilter are:
 
 module ImmutableBloomFilter (ImmutableBloom,
                              newFromList,
-                             length,
+                             size,
                              elem,
                              notElem) where
 
@@ -20,7 +20,7 @@ import Data.Array.Unboxed (bounds, (!))
 import Data.List (genericLength)
 import Data.Word (Word32)
 import qualified MutableBloomFilter (insert, new, toImmutable)
-import Prelude hiding (length, elem, notElem)
+import Prelude hiding (elem, notElem)
 
 -- | Create an immutable bloom filter.
 -- The first argument is the false positive rate desired (between 0 and 1) (P)
@@ -32,9 +32,9 @@ newFromList p initList = MutableBloomFilter.toImmutable $ do
     mapM_ (MutableBloomFilter.insert mutableBloom) initList
     return mutableBloom
 
--- | Returns the total length (M = m*k) of the filter.
-length :: ImmutableBloom a -> Word32
-length filt = ((1 +) . snd) (bounds (immutBitArray filt))
+-- | Returns the total size (M = m*k) in bits of the filter.
+size :: ImmutableBloom a -> Word32
+size filt = ((1 +) . snd) (bounds (immutBitArray filt))
 
 -- | Given an element to insert, return the corresponding indices that should
 -- be set in the filter
@@ -47,6 +47,7 @@ getHashIndices filt element = addSliceOffsets indicesWithinSlice
           bitsPerSlice = immutBitsPerSlice filt
 
 -- | Returns True if the element is in the filter
+-- There is a small chance that True will be returned even if the element is NOT in the filter
 elem :: ImmutableBloom a -> a -> Bool
 elem filt element = all (immutBitArray filt !) (getHashIndices filt element)
 

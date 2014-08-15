@@ -1,6 +1,7 @@
 {-|
 Module      : MutableBloomFilter
-Description : Mutable bloom filter allowing insertion of elements.
+Description : Mutable bloom filter allowing insertion of elements
+              post-construction.
 
 This bloom filter has a bit array that is partitioned into slices,
 in line with the paper 'Scalable Bloom Filters' by Almeida et. al
@@ -9,13 +10,15 @@ The main differences between this and ImmutableBloomFilter are:
     1. the latter can be used from pure code
     2. the latter does NOT allow insertion of elements once initialized.
 -}
+
 {-# LANGUAGE RankNTypes #-}
 
 module MutableBloomFilter(MutableBloom,
                           ImmutableBloom,
                           new,
                           fromList,
-                          length,
+                          size,
+                          count,
                           insert,
                           insertList,
                           elem,
@@ -27,9 +30,10 @@ import Control.Monad.ST (ST, runST)
 import Data.Array.MArray (MArray, newArray, getBounds, writeArray, readArray)
 import Data.Array.Unsafe (unsafeFreeze)
 import Data.List (genericLength)
+import Data.STRef (newSTRef, readSTRef, modifySTRef)
 import Data.Word (Word32)
 import Hash.Hash
-import Prelude hiding (length, elem, notElem)
+import Prelude hiding (elem, notElem)
 import Types
 
 -- | Create a mutable bloom filter.
@@ -54,10 +58,14 @@ toImmutable mb = runST $ do
     let capacity = mutCap mutableBloom
         bitsPerSlice = mutBitsPerSlice mutableBloom
         hashFuns = mutHashFns mutableBloom
+    curCount <- runST $ return $ count mutableBloom
     f <- unsafeFreeze $ mutBitArray mutableBloom -- for copying STUArray -> UArray, unsafeFreeze is
                                                  -- O(n) if compiled without -o,
                                                  -- O(1) if compiled with -o
-    return $ ImmutableBloom capacity bitsPerSlice hashFuns f
+    return $ ImmutableBloom capacity curCount bitsPerSlice hashFuns f
+
+count :: MutableBloom s a -> ST s Word32
+count = readSTRef . mutCurCount
 
 -- | Convert a mutable bloom filter to an immutable bloom filter in ST
 --toImmutable' :: Hashable a => (MutableBloom s a) -> ST s (ImmutableBloom a)
@@ -69,7 +77,7 @@ toImmutable mb = runST $ do
 -- | Calculate the bits per slice (m) and number of slices (k) filter parameters
 -- The first argument is the desired error rate (P)
 -- The second argument is the capacity (n)
--- Returns (number of slices, bits per slice)
+-- Returns (number of slices k, bits per slice m)
 -- Note that m*k = M (filter size)
 -- We assume in the equations below that the fill ratio (p) is optimal i.e., p = 1/2. 'Optimal' here means
 -- we've maximized the capacity n
@@ -86,18 +94,28 @@ calculateFilterParams p n | n <= 0 = error "n must be strictly positive"
 -- The first argument is the number of slices in the filter (k)
 -- The second argument is the number of bits in each slice (m)
 new' :: Hashable a => Word32 -> Int -> Word32 -> ST s (MutableBloom s a)
-new' capacity numSlices bitsPerSlice = return . MutableBloom capacity bitsPerSlice (genHashes numSlices) =<< newArray (0, _M) False
+new' capacity numSlices bitsPerSlice = do
+    initCount <- newSTRef 0
+    initArray <- newArray (0, _M) False
+    return $ MutableBloom capacity initCount bitsPerSlice (genHashes numSlices) initArray
     where _M = fromIntegral numSlices * bitsPerSlice -- ^ total number of bits in the filter (M = k * m)
 
--- | Returns the total length (M = m*k) of the filter.
-length :: MutableBloom s a -> ST s Word32
-length filt = fmap ((1 +) . snd) (getBounds . mutBitArray $ filt)
+-- | Returns the total size (M = m*k) in bits of the filter.
+size :: MutableBloom s a -> ST s Word32
+size filt = fmap ((1 +) . snd) (getBounds . mutBitArray $ filt)
 
 -- | Inserts an element into the filter.
 -- The first argument is the filter
 -- The second argument is the element to insert
 insert :: MutableBloom s a -> a -> ST s ()
-insert filt element = getHashIndices filt element >>= mapM_ (\bit -> writeArray (mutBitArray filt) bit True)
+insert filt element = do
+    indicesToSet <- getHashIndices filt element
+    present <- elem' filt element indicesToSet
+    if present then
+        return ()
+    else do
+        modifySTRef (mutCurCount filt) (1 +)
+        mapM_ (\bit -> writeArray (mutBitArray filt) bit True) indicesToSet
 
 -- | Inserts multiple elements into the filter.
 -- The first argument is the filter
@@ -114,8 +132,12 @@ getHashIndices filt element = return . addSliceOffsets $ indicesWithinSlice
           bitsPerSlice = mutBitsPerSlice filt
 
 -- | Returns True if the element is in the filter
+-- There is a small chance that True will be returned even if the element is NOT in the filter
 elem :: MutableBloom s a -> a -> ST s Bool
-elem filt element = liftM and $ getHashIndices filt element >>= mapM (readArray (mutBitArray filt))
+elem filt element = getHashIndices filt element >>= elem' filt element
+
+elem' :: MutableBloom s a -> a -> [Word32] -> ST s Bool
+elem' filt element indicesToCheck = liftM and (mapM (readArray (mutBitArray filt)) indicesToCheck)
 
 -- | Complement of 'elem'.
 notElem :: MutableBloom s a -> a -> ST s Bool
