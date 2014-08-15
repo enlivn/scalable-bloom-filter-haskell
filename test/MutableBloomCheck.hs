@@ -36,7 +36,7 @@ runNTests n = quickCheckWith (stdArgs{maxSuccess=n})
 -- an element that was inserted is ALWAYS found
 prop_elem_inserted_always_exists :: Hashable a => FalsePositiveRate -> a -> Bool
 prop_elem_inserted_always_exists (FalsePositiveRate falsePositiveRate) element = runST $ M.fromList falsePositiveRate [element] >>=
-                                                                          flip M.elem element
+                                                                                 flip M.elem element
 
 main :: IO ()
 main = do
