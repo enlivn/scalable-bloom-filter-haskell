@@ -19,6 +19,7 @@ module MutableBloomFilter(MutableBloom,
                           fromList,
                           size,
                           getCount,
+                          isFull,
                           insert,
                           insertList,
                           elem,
@@ -40,7 +41,7 @@ import Types
 -- The first argument is the false positive rate desired (between 0 and 1) (P)
 -- The second argument is the capacity of the filter (n)
 new :: Hashable a => Double -> Word32 -> ST s (MutableBloom s a)
-new p n = uncurry (new' n) (calculateFilterParams p n)
+new p n = uncurry (new' p n) (calculateFilterParams p n)
 
 -- | Create a mutable bloom filter and initialize it with the list passed in.
 -- The first argument is the false positive rate desired (between 0 and 1) (P)
@@ -55,14 +56,15 @@ fromList p initList = new p (genericLength initList) >>= \mb -> do
 toImmutable :: (forall s. ST s (MutableBloom s a)) -> ImmutableBloom a
 toImmutable mb = runST $ do
     mutableBloom <- mb
-    let capacity = mutCap mutableBloom
+    let errRate = mutErrRate mutableBloom
+        capacity = mutCap mutableBloom
         bitsPerSlice = mutBitsPerSlice mutableBloom
         hashFuns = mutHashFns mutableBloom
     curCount <- runST $ return $ getCount mutableBloom
     f <- unsafeFreeze $ mutBitArray mutableBloom -- for copying STUArray -> UArray, unsafeFreeze is
                                                  -- O(n) if compiled without -o,
                                                  -- O(1) if compiled with -o
-    return $ ImmutableBloom capacity curCount bitsPerSlice hashFuns f
+    return $ ImmutableBloom errRate capacity curCount bitsPerSlice hashFuns f
 
 -- | Returns the number of elements inserted in the filter
 getCount :: MutableBloom s a -> ST s Word32
@@ -72,7 +74,11 @@ getCount = readSTRef . mutCurCount
 -- is equal to the capacity of the filter
 -- Returns False otherwise
 isFull :: MutableBloom s a -> ST s Bool
-isFull = undefined
+isFull filt@(MutableBloom _ cap _ _ _ _)= getCount filt >>= \curCount -> do
+    if (curCount == cap) then
+        return True
+    else
+        return False
 
 -- | Convert a mutable bloom filter to an immutable bloom filter in ST
 --toImmutable' :: Hashable a => (MutableBloom s a) -> ST s (ImmutableBloom a)
@@ -100,11 +106,11 @@ calculateFilterParams p n | n <= 0 = error "n must be strictly positive"
 -- | Create a mutable bloom filter
 -- The first argument is the number of slices in the filter (k)
 -- The second argument is the number of bits in each slice (m)
-new' :: Hashable a => Word32 -> Int -> Word32 -> ST s (MutableBloom s a)
-new' capacity numSlices bitsPerSlice = do
+new' :: Hashable a => Double -> Word32 -> Int -> Word32 -> ST s (MutableBloom s a)
+new' p capacity numSlices bitsPerSlice = do
     initCount <- newSTRef 0
     initArray <- newArray (0, _M) False
-    return $ MutableBloom capacity initCount bitsPerSlice (genHashes numSlices) initArray
+    return $ MutableBloom p capacity initCount bitsPerSlice (genHashes numSlices) initArray
     where _M = fromIntegral numSlices * bitsPerSlice -- ^ total number of bits in the filter (M = k * m)
 
 -- | Returns the total size (M = m*k) in bits of the filter.
@@ -114,7 +120,7 @@ size filt = fmap ((1 +) . snd) (getBounds . mutBitArray $ filt)
 -- | Inserts an element into the filter.
 -- The first argument is the filter
 -- The second argument is the element to insert
-insert :: MutableBloom s a -> a -> ST s ()
+insert :: Hashable a => MutableBloom s a -> a -> ST s ()
 insert filt element = do
     indicesToSet <- getHashIndices filt element
     present <- elem' filt element indicesToSet
@@ -127,7 +133,7 @@ insert filt element = do
 -- | Inserts multiple elements into the filter.
 -- The first argument is the filter
 -- The second argument is the list of elements to insert
-insertList :: MutableBloom s a -> [a] -> ST s ()
+insertList :: Hashable a => MutableBloom s a -> [a] -> ST s ()
 insertList filt = mapM_ (insert filt)
 
 -- | Given an element to insert, return the corresponding indices that should
