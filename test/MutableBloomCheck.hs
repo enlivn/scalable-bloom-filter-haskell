@@ -50,12 +50,12 @@ prop_elem_inserted_always_exists (FalsePositiveRate falsePositiveRate)
 prop_filt_count_is_lessthan_or_equal_num_elems_inserted :: Hashable a => NumElemsToInsert -> a -> Bool
 prop_filt_count_is_lessthan_or_equal_num_elems_inserted (NumElemsToInsert numElems) element =
         runST $ M.fromList 0.01 testElems >>=
-        liftM ((>=) (fromIntegral numElems)) . M.count -- the count of the filter can either be equal
-                                                       -- or smaller than the number of elements that
-                                                       -- we attempted to insert (because the count
-                                                       -- would not have been incremented for some
-                                                       -- elements that the filter thinks it already
-                                                       -- has (because of false positives))
+        liftM ((>=) (fromIntegral numElems)) . M.getCount -- the getCount of the filter can either be equal
+                                                          -- or smaller than the number of elements that
+                                                          -- we attempted to insert (because the getCount
+                                                          -- would not have been incremented for some
+                                                          -- elements that the filter thinks it already
+                                                          -- has (because of false positives))
         where testElems = [1..numElems] -- make sure we generate unique elements to minimize false
                                         -- positives
 

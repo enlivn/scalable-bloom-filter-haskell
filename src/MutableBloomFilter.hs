@@ -18,7 +18,7 @@ module MutableBloomFilter(MutableBloom,
                           new,
                           fromList,
                           size,
-                          count,
+                          getCount,
                           insert,
                           insertList,
                           elem,
@@ -58,14 +58,21 @@ toImmutable mb = runST $ do
     let capacity = mutCap mutableBloom
         bitsPerSlice = mutBitsPerSlice mutableBloom
         hashFuns = mutHashFns mutableBloom
-    curCount <- runST $ return $ count mutableBloom
+    curCount <- runST $ return $ getCount mutableBloom
     f <- unsafeFreeze $ mutBitArray mutableBloom -- for copying STUArray -> UArray, unsafeFreeze is
                                                  -- O(n) if compiled without -o,
                                                  -- O(1) if compiled with -o
     return $ ImmutableBloom capacity curCount bitsPerSlice hashFuns f
 
-count :: MutableBloom s a -> ST s Word32
-count = readSTRef . mutCurCount
+-- | Returns the number of elements inserted in the filter
+getCount :: MutableBloom s a -> ST s Word32
+getCount = readSTRef . mutCurCount
+
+-- | Returns True if the number of elements inserted in the filter
+-- is equal to the capacity of the filter
+-- Returns False otherwise
+isFull :: MutableBloom s a -> ST s Bool
+isFull = undefined
 
 -- | Convert a mutable bloom filter to an immutable bloom filter in ST
 --toImmutable' :: Hashable a => (MutableBloom s a) -> ST s (ImmutableBloom a)
