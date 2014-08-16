@@ -20,6 +20,8 @@ cl: clean
 
 clean:
 	@rm -rf $(CLASSDIR)
+	@find . -name '*.hi' | xargs rm -f
+	@find . -name '*.o' | xargs rm -f
 
 # -----------------
 # Source Files
@@ -37,7 +39,7 @@ $(CLASSDIR)/%.o : $(SRCDIR)/%.hs
 	@echo "--------------------------------------------------------------------"
 	@echo "Compiling source file:\t" $<
 	@echo "--------------------------------------------------------------------"
-	@$(GHC) --make $(GHCFLAGS) -isrc -outputdir $(CLASSDIR) $<
+	@$(GHC) --make $(GHCFLAGS) -i$(SRCDIR):$(TESTDIR) -outputdir $(CLASSDIR) $<
 
 SOURCEFILESTOCOMPILE = $(addprefix $(CLASSDIR)/, $(SOURCEFILES:.hs=.o))
 
@@ -51,7 +53,7 @@ $(CLASSDIR)/%.o : $(TESTDIR)/%.hs
 	@echo "--------------------------------------------------------------------"
 	@echo "Compiling test file:\t" $<
 	@echo "--------------------------------------------------------------------"
-	@$(GHC) -rtsopts -isrc -prof -auto-all $(GHCFLAGS) --make -outputdir $(CLASSDIR) $(SOURCEFILES_C) $<
+	@$(GHC) -rtsopts -i$(SRCDIR):$(TESTDIR) -prof -auto-all $(GHCFLAGS) --make -outputdir $(CLASSDIR) $(SOURCEFILES_C) $<
 
 TESTFILES := \
 				MutableBloomCheck.hs \
