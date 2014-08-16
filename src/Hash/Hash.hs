@@ -8,8 +8,8 @@ module Hash.Hash where
 
 import Control.Monad (foldM)
 import Data.Bits ((.&.), shiftR)
-import Data.ByteString as S (useAsCStringLen, ByteString, concat)
-import Data.ByteString.Lazy as L (ByteString, null, splitAt, toChunks)
+import qualified Data.ByteString as S (useAsCStringLen, ByteString, concat)
+import qualified Data.ByteString.Lazy as L (ByteString, null, splitAt, toChunks)
 import Data.Word (Word32, Word64)
 import Foreign.Marshal.Array (withArrayLen)
 import Foreign.Marshal.Utils (with)

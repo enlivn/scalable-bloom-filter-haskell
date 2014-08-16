@@ -7,36 +7,18 @@ Description : QuickCheck tests for Mutable bloom filter
 
 module Main where
 
+import Control.Monad (liftM)
+import Control.Monad.ST (ST, runST)
+import qualified Data.ByteString as S (ByteString, pack)
+import qualified Data.ByteString.Lazy as L (ByteString, pack)
+import Data.Word (Word32)
 import Hash.Hash
 import qualified MutableBloomFilter as M
 import System.Random (Random)
+import TestTypes
 import Test.QuickCheck
 import Test.QuickCheck.Modifiers (Positive)
-import Control.Monad.ST (ST, runST)
-import Data.Word (Word32)
-import Data.ByteString.Lazy as L (ByteString, pack)
-import Data.ByteString as S (ByteString, pack)
 import Types
-import Control.Monad (liftM)
-
-newtype NumElemsToInsert = NumElemsToInsert Int
-    deriving (Num, Random, Show)
-
-instance Arbitrary (NumElemsToInsert) where -- limit number of elements to insert to save time
-    arbitrary = choose (1, 10000)
-
-newtype FalsePositiveRate = FalsePositiveRate Double
-    deriving (Num, Fractional, Random, Show)
-
-instance Arbitrary FalsePositiveRate where
-    arbitrary = choose (eps, 1-eps)
-        where eps = 1e-6
-
-instance Arbitrary L.ByteString where
-    arbitrary = fmap L.pack arbitrary
-
-instance Arbitrary S.ByteString where
-    arbitrary = fmap S.pack arbitrary
 
 runNTests :: Testable a => Int -> a -> IO ()
 runNTests n = quickCheckWith (stdArgs{maxSuccess=n})
