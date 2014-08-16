@@ -110,7 +110,12 @@ new' :: Hashable a => Double -> Word32 -> Int -> Word32 -> ST s (MutableBloom s 
 new' p capacity numSlices bitsPerSlice = do
     initCount <- newSTRef 0
     initArray <- newArray (0, _M) False
-    return $ MutableBloom p capacity initCount bitsPerSlice (genHashes numSlices) initArray
+    return $ MutableBloom p
+                          capacity
+                          initCount
+                          bitsPerSlice
+                          (genHashes numSlices)
+                          initArray
     where _M = fromIntegral numSlices * bitsPerSlice -- ^ total number of bits in the filter (M = k * m)
 
 -- | Returns the total size (M = m*k) in bits of the filter.
@@ -140,12 +145,15 @@ insertList filt = mapM_ (insert filt)
 -- be set in the filter
 getHashIndices :: MutableBloom s a -> a -> ST s [Word32]
 getHashIndices filt element = return . addSliceOffsets $ indicesWithinSlice
-    where addSliceOffsets = (flip . zipWith) (\indexWithinSlice sliceOffset -> sliceOffset*bitsPerSlice + indexWithinSlice) [0..]
+    where addSliceOffsets = (flip . zipWith) (\indexWithinSlice sliceOffset ->
+                                                sliceOffset*bitsPerSlice + indexWithinSlice)
+                                             [0..]
           indicesWithinSlice = map (`mod` bitsPerSlice) $ mutHashFns filt element
           bitsPerSlice = mutBitsPerSlice filt
 
 -- | Returns True if the element is in the filter
--- There is a small chance that True will be returned even if the element is NOT in the filter
+-- There is a small chance that True will be returned even if the element
+-- is NOT in the filter
 elem :: MutableBloom s a -> a -> ST s Bool
 elem filt element = getHashIndices filt element >>= elem' filt element
 

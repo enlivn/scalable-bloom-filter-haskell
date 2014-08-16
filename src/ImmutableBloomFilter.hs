@@ -47,7 +47,8 @@ getHashIndices filt element = addSliceOffsets indicesWithinSlice
           bitsPerSlice = immutBitsPerSlice filt
 
 -- | Returns True if the element is in the filter
--- There is a small chance that True will be returned even if the element is NOT in the filter
+-- There is a small chance that True will be returned even if the element
+-- is NOT in the filter
 elem :: ImmutableBloom a -> a -> Bool
 elem filt element = all (immutBitArray filt !) (getHashIndices filt element)
 
