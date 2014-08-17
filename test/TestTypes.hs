@@ -1,3 +1,8 @@
+{-|
+Module      : TestTypes
+Description : Define types for testing.
+-}
+
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module TestTypes where
@@ -7,11 +12,31 @@ import Data.ByteString.Lazy as L (ByteString, pack)
 import System.Random (Random)
 import Test.QuickCheck
 
-newtype NumElemsToInsert = NumElemsToInsert Int
-    deriving (Num, Random, Show)
+runNTests :: Testable a => Int -> a -> IO ()
+runNTests n = quickCheckWith (stdArgs{maxSuccess=n})
 
-instance Arbitrary (NumElemsToInsert) where -- limit number of elements to insert to save time
-    arbitrary = choose (1, 10000)
+newtype NumElemsForNoScaling = NumElemsForNoScaling Int
+    deriving (Random, Show, Num)
+
+instance Arbitrary NumElemsForNoScaling where
+    arbitrary = choose(1, 1024)
+
+-- we need at least 1025 elements to force the scalable filter to
+-- scale up (because the first constituent filter can accommodate
+-- 1024 elements)
+newtype NumElemsToForceScaling = NumElemsToForceScaling Int
+    deriving (Random, Show, Num)
+
+instance Arbitrary NumElemsToForceScaling where
+    arbitrary = choose(1025, 10000)
+
+-- limit the number of elements to 10000 so that tests don't
+-- take too long
+newtype LimitNumElems = LimitNumElems Int
+    deriving (Random, Show, Num)
+
+instance Arbitrary LimitNumElems where
+    arbitrary = choose(1,10000)
 
 newtype FalsePositiveRate = FalsePositiveRate Double
     deriving (Num, Fractional, Random, Show)

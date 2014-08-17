@@ -56,7 +56,8 @@ $(CLASSDIR)/%.o : $(TESTDIR)/%.hs
 	@$(GHC) -rtsopts -i$(SRCDIR):$(TESTDIR) -prof -auto-all $(GHCFLAGS) --make -outputdir $(CLASSDIR) $(SOURCEFILES_C) $<
 
 TESTFILES := \
-				MutableBloomCheck.hs \
+				ScalableBloomFilterCheck.hs \
+				MutableBloomFilterCheck.hs \
 				MutableBloomProfiling.hs \
 
 TESTFILESTOCOMPILE = $(addprefix $(CLASSDIR)/, $(TESTFILES:.hs=.o))

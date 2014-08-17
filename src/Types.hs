@@ -1,10 +1,11 @@
 {-|
 Module      : Types
-Description : Define types.
+Description : Define types for filters.
 -}
+
 module Types where
 
-import Data.Array.ST (STArray, STUArray)
+import Data.Array.ST (STUArray)
 import Data.Array.Unboxed (UArray)
 import Data.STRef (STRef)
 import Data.Word (Word32)
@@ -31,5 +32,5 @@ data ImmutableBloom a = ImmutableBloom {
 data ScalableBloom s a = ScalableBloom {
                             cap :: Word32,                                -- ^ capacity of scalable filter
                             errRate :: Double,                            -- ^ compounded false positive rate (P) of scalable filter
-                            filtArray :: STArray s Int (MutableBloom s a) -- ^ array of constituent bloom filters
+                            filtArray :: STRef s [MutableBloom s a] -- ^ array of constituent bloom filters
                          }
