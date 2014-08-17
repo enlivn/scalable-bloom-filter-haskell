@@ -1,9 +1,9 @@
 {-|
-Module      : Main
+Module      : ScalableBloomFilterCheck
 Description : QuickCheck tests for Scalable bloom filter
 -}
 
-module Main where
+module ScalableBloomFilterCheck where
 
 import Control.Monad.ST (runST)
 import qualified Data.ByteString as S (ByteString)

@@ -1,11 +1,11 @@
 {-|
-Module      : Main
+Module      : MutableBloomFilterCheck
 Description : QuickCheck tests for Mutable bloom filter
 -}
 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Main where
+module MutableBloomFilterCheck where
 
 import Control.Monad (liftM)
 import Control.Monad.ST (runST)
