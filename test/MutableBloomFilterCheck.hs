@@ -8,17 +8,12 @@ Description : QuickCheck tests for Mutable bloom filter
 module Main where
 
 import Control.Monad (liftM)
-import Control.Monad.ST (ST, runST)
-import qualified Data.ByteString as S (ByteString, pack)
-import qualified Data.ByteString.Lazy as L (ByteString, pack)
-import Data.Word (Word32)
+import Control.Monad.ST (runST)
+import qualified Data.ByteString as S (ByteString)
+import qualified Data.ByteString.Lazy as L (ByteString)
 import Hash.Hash
 import qualified MutableBloomFilter as M
-import System.Random (Random)
 import TestTypes
-import Test.QuickCheck
-import Test.QuickCheck.Modifiers (Positive)
-import Types
 
 -- an element that was inserted is always found
 prop_elem_inserted_always_exists :: Hashable a => FalsePositiveRate -> a -> Bool

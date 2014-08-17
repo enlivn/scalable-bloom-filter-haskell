@@ -9,11 +9,9 @@ module Main where
 
 import Control.Monad (liftM)
 import Control.Parallel.Strategies (NFData, rdeepseq, withStrategy)
-import Control.Monad.ST (ST, runST)
+import Control.Monad.ST (ST)
 import Data.Time.Clock (getCurrentTime, diffUTCTime)
 import qualified Data.ByteString.Char8 as L (readFile, lines)
-import qualified Data.ByteString as S (ByteString)
-import Hash.Hash
 import qualified ImmutableBloomFilter as Im (elem, ImmutableBloom)
 import qualified MutableBloomFilter as M (toImmutable, fromList)
 import System.Environment (getArgs)
@@ -36,8 +34,8 @@ main :: IO ()
 main = do
     fileList <- getArgs
     if null fileList then do
-        let fileList = ["/usr/share/dict/words"]
-        mapM processFile fileList
+        let fList = ["/usr/share/dict/words"]
+        mapM processFile fList
     else
         mapM processFile fileList
     return ()

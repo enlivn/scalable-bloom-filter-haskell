@@ -1,7 +1,7 @@
 .PHONY: makedirs all test clean cl
 
 GHC = ghc
-GHCFLAGS = -w -O2
+GHCFLAGS = -Wall -O2 -fno-warn-orphans -fno-warn-unused-do-bind
 CLASSDIR = obj
 SRCDIR = src
 TESTDIR = test

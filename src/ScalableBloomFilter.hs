@@ -19,8 +19,7 @@ module ScalableBloomFilter(new,
                            notElem) where
 
 import Control.Monad (liftM)
-import Control.Monad.ST (ST, runST)
-import Data.Array.MArray (getElems, newArray, writeArray)
+import Control.Monad.ST (ST)
 import Data.STRef (newSTRef, readSTRef, modifySTRef')
 import Data.Word (Word32)
 import Hash.Hash

@@ -56,7 +56,7 @@ fromList p initList = new p (genericLength initList) >>= \mb -> do
 toImmutable :: (forall s. ST s (MutableBloom s a)) -> ImmutableBloom a
 toImmutable mb = runST $ do
     mutableBloom <- mb
-    let errRate = mutErrRate mutableBloom
+    let errorRate = mutErrRate mutableBloom
         capacity = mutCap mutableBloom
         bitsPerSlice = mutBitsPerSlice mutableBloom
         hashFuns = mutHashFns mutableBloom
@@ -64,7 +64,7 @@ toImmutable mb = runST $ do
     f <- unsafeFreeze $ mutBitArray mutableBloom -- for copying STUArray -> UArray, unsafeFreeze is
                                                  -- O(n) if compiled without -o,
                                                  -- O(1) if compiled with -o
-    return $ ImmutableBloom errRate capacity curCount bitsPerSlice hashFuns f
+    return $ ImmutableBloom errorRate capacity curCount bitsPerSlice hashFuns f
 
 -- | Returns the number of elements inserted in the filter
 getCount :: MutableBloom s a -> ST s Word32
@@ -74,8 +74,8 @@ getCount = readSTRef . mutCurCount
 -- is equal to the capacity of the filter
 -- Returns False otherwise
 isFull :: MutableBloom s a -> ST s Bool
-isFull filt@(MutableBloom _ cap _ _ _ _)= getCount filt >>= \curCount -> do
-    if (curCount == cap) then
+isFull filt@(MutableBloom _ capacity _ _ _ _)= getCount filt >>= \curCount -> do
+    if (curCount == capacity) then
         return True
     else
         return False
@@ -99,7 +99,7 @@ calculateFilterParams p n | n <= 0 = error "n must be strictly positive"
                           | p <= 0 || p >= 1 = error "p must be between 0 and 1"
                           | otherwise = (k, fromIntegral m)
     where k = ceiling $ logBase 2 (1 / p) :: Int -- k = log2 (1/P)
-          m = ceiling $ n' * abs (log p) / (k' * log 2 **2) -- m = n * abs(log(P))/(k*(ln2)^2)
+          m = ceiling $ n' * abs (log p) / (k' * log 2 **2) :: Int -- m = n * abs(log(P))/(k*(ln2)^2)
           n' = fromIntegral n :: Double
           k' = fromIntegral k :: Double
 
@@ -128,7 +128,7 @@ size filt = fmap ((1 +) . snd) (getBounds . mutBitArray $ filt)
 insert :: Hashable a => MutableBloom s a -> a -> ST s ()
 insert filt element = do
     indicesToSet <- getHashIndices filt element
-    present <- elem' filt element indicesToSet
+    present <- elem' filt indicesToSet
     if present then
         return ()
     else do
@@ -155,10 +155,10 @@ getHashIndices filt element = return . addSliceOffsets $ indicesWithinSlice
 -- There is a small chance that True will be returned even if the element
 -- is NOT in the filter
 elem :: MutableBloom s a -> a -> ST s Bool
-elem filt element = getHashIndices filt element >>= elem' filt element
+elem filt element = getHashIndices filt element >>= elem' filt
 
-elem' :: MutableBloom s a -> a -> [Word32] -> ST s Bool
-elem' filt element indicesToCheck = liftM and (mapM (readArray (mutBitArray filt)) indicesToCheck)
+elem' :: MutableBloom s a -> [Word32] -> ST s Bool
+elem' filt indicesToCheck = liftM and (mapM (readArray (mutBitArray filt)) indicesToCheck)
 
 -- | Complement of 'elem'.
 notElem :: MutableBloom s a -> a -> ST s Bool
