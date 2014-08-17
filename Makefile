@@ -20,6 +20,7 @@ cl: clean
 
 clean:
 	@rm -rf $(CLASSDIR)
+	@rm -rf dist
 	@find . -name '*.hi' | xargs rm -f
 	@find . -name '*.o' | xargs rm -f
 
@@ -59,6 +60,7 @@ TESTFILES := \
 				ScalableBloomFilterCheck.hs \
 				MutableBloomFilterCheck.hs \
 				MutableBloomProfiling.hs \
+				QCTests.hs \
 
 TESTFILESTOCOMPILE = $(addprefix $(CLASSDIR)/, $(TESTFILES:.hs=.o))
 
