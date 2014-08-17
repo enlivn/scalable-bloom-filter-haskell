@@ -57,8 +57,8 @@ $(CLASSDIR)/%.o : $(TESTDIR)/%.hs
 	@$(GHC) -rtsopts -i$(SRCDIR):$(TESTDIR) -prof -auto-all $(GHCFLAGS) --make -outputdir $(CLASSDIR) $(SOURCEFILES_C) $<
 
 TESTFILES := \
-				ScalableBloomFilterCheck.hs \
-				MutableBloomFilterCheck.hs \
+				ScalableBloomFilterTest.hs \
+				MutableBloomFilterTest.hs \
 				MutableBloomProfiling.hs \
 				QCTests.hs \
 
